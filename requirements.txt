@@ -12,3 +12,6 @@ langchain_core
 openai
 uv
 pyOpenSSL
+pytest
+pytest-asyncio
+pytest-flask

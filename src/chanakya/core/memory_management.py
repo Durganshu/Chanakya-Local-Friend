@@ -1,3 +1,9 @@
+"""
+Memory management using SQLite for long-term storage.
+
+Provides functions to create, read, add, and delete memories with timestamps.
+"""
+
 import os
 import sqlite3
 import datetime
@@ -8,6 +14,7 @@ DATABASE_PATH = config.DATABASE_PATH
 
 
 def create_table():
+    """Creates the memories SQLite table if it does not exist."""
     try:
         db_dir = os.path.dirname(DATABASE_PATH)
         if db_dir and not os.path.exists(db_dir):
@@ -26,6 +33,7 @@ def create_table():
 
 
 def retrieve_relevant_memories(user_message, limit=3):
+    """Searches memories for keywords from user_message, returns up to limit matches."""
     if not user_message or not user_message.strip():
         return []
     conn = sqlite3.connect(DATABASE_PATH)

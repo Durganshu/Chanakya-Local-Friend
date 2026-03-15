@@ -1,3 +1,10 @@
+"""
+Flask routes for the Chanakya chatbot.
+
+Handles /, /chat, /record, /play_response, /memory endpoints.
+Uses async/await for long-running operations.
+"""
+
 import asyncio
 import base64
 import datetime
@@ -184,7 +191,7 @@ Current date and time: {current_dt_str}"""
         return jsonify(
             {
                 "response": f"I encountered an issue while using one of my tools: {str(e)}. Please try again or rephrase your request.",
-                "used_tools": []
+                "used_tools": [],
             }
         )
     except Exception as e:
@@ -311,7 +318,7 @@ Current date and time: {current_dt_str}"""
             bot_speech_audio_data_url = None
             if utils_module.last_ai_response:
                 tts_audio_bytes = get_tts().generate(utils_module.last_ai_response)
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tts_f:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tts_f:
                     tts_f.write(tts_audio_bytes)
                     tts_audio_file_path_for_bot_response = tts_f.name
                 if tts_audio_file_path_for_bot_response and os.path.exists(
@@ -350,7 +357,7 @@ Current date and time: {current_dt_str}"""
                 {
                     "response": f"I encountered an issue while using one of my tools: {str(e)}.",
                     "transcription": transcription,
-                    "used_tools": []
+                    "used_tools": [],
                 }
             )
         except Exception as e:
@@ -371,7 +378,7 @@ def play_response():
     if utils_module.last_ai_response:
         try:
             tts_audio_bytes = get_tts().generate(utils_module.last_ai_response)
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tts_f:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tts_f:
                 tts_f.write(tts_audio_bytes)
                 audio_file_path = tts_f.name
             if not audio_file_path or not os.path.exists(audio_file_path):
@@ -411,4 +418,3 @@ def delete_memory_route():
     if memory_id:
         delete_memory(memory_id)
     return redirect(url_for("memory_page"))
-

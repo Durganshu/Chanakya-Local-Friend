@@ -15,7 +15,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 sys.path.insert(0, "/home/jailuser/git")
 
 
-def build_server_config_from_details(details: dict, os_environ: dict = None) -> dict:
+def build_server_config_from_details(
+    details: dict, os_environ: dict | None = None
+) -> dict:
     """
     Replicate the server config building + env injection logic from tool_loader.py.
     This tests the logic in isolation without importing the module.
@@ -186,21 +188,26 @@ class TestToolLoaderCachingLogic(unittest.TestCase):
             if "chanakya" in key:
                 del sys.modules[key]
 
-        with patch.dict(os.environ, {
-            "APP_SECRET_KEY": "test-secret",
-            "FLASK_DEBUG": "True",
-            "DATABASE_PATH": ":memory:",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "APP_SECRET_KEY": "test-secret",
+                "FLASK_DEBUG": "True",
+                "DATABASE_PATH": ":memory:",
+            },
+        ):
             from src.chanakya.services import tool_loader
 
             # Reset the global state
             tool_loader.CACHED_MCP_TOOLS = []
             tool_loader.MCP_TOOLS_LOADED_FLAG = False
 
-            with patch("src.chanakya.services.tool_loader.load_mcp_config_internal") as mock_load:
+            with patch(
+                "src.chanakya.services.tool_loader.load_mcp_config_internal"
+            ) as mock_load:
                 mock_load.return_value = {}  # Empty config
 
-                result = asyncio.get_event_loop().run_until_complete(
+                result = asyncio.new_event_loop().run_until_complete(
                     tool_loader.load_all_mcp_tools_async()
                 )
 
@@ -220,11 +227,14 @@ class TestToolLoaderCachingLogic(unittest.TestCase):
             if "chanakya" in key:
                 del sys.modules[key]
 
-        with patch.dict(os.environ, {
-            "APP_SECRET_KEY": "test-secret",
-            "FLASK_DEBUG": "True",
-            "DATABASE_PATH": ":memory:",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "APP_SECRET_KEY": "test-secret",
+                "FLASK_DEBUG": "True",
+                "DATABASE_PATH": ":memory:",
+            },
+        ):
             from src.chanakya.services import tool_loader
 
             # Set up "already loaded" state
@@ -233,8 +243,10 @@ class TestToolLoaderCachingLogic(unittest.TestCase):
             tool_loader.CACHED_MCP_TOOLS = [mock_tool]
             tool_loader.MCP_TOOLS_LOADED_FLAG = True
 
-            with patch("src.chanakya.services.tool_loader.load_mcp_config_internal") as mock_load:
-                result = asyncio.get_event_loop().run_until_complete(
+            with patch(
+                "src.chanakya.services.tool_loader.load_mcp_config_internal"
+            ) as mock_load:
+                result = asyncio.new_event_loop().run_until_complete(
                     tool_loader.load_all_mcp_tools_async()
                 )
                 # Should not call load_mcp_config_internal again
@@ -250,21 +262,26 @@ class TestToolLoaderCachingLogic(unittest.TestCase):
             if "chanakya" in key:
                 del sys.modules[key]
 
-        with patch.dict(os.environ, {
-            "APP_SECRET_KEY": "test-secret",
-            "FLASK_DEBUG": "True",
-            "DATABASE_PATH": ":memory:",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "APP_SECRET_KEY": "test-secret",
+                "FLASK_DEBUG": "True",
+                "DATABASE_PATH": ":memory:",
+            },
+        ):
             from src.chanakya.services import tool_loader
 
             mock_tool = MagicMock()
             tool_loader.CACHED_MCP_TOOLS = [mock_tool]
             tool_loader.MCP_TOOLS_LOADED_FLAG = True
 
-            with patch("src.chanakya.services.tool_loader.load_mcp_config_internal") as mock_load:
+            with patch(
+                "src.chanakya.services.tool_loader.load_mcp_config_internal"
+            ) as mock_load:
                 mock_load.return_value = {}  # Empty config
 
-                result = asyncio.get_event_loop().run_until_complete(
+                result = asyncio.new_event_loop().run_until_complete(
                     tool_loader.load_all_mcp_tools_async(force_reload=True)
                 )
                 # Should have called load_mcp_config_internal because force_reload=True
@@ -299,17 +316,21 @@ class TestToolLoaderEnvInjectionIntegration(unittest.TestCase):
         Patches 'os' into tool_loader module namespace to work around the missing
         `import os` in tool_loader.py.
         """
-        with patch.dict(os.environ, {
-            "APP_SECRET_KEY": "test-secret",
-            "FLASK_DEBUG": "True",
-            "DATABASE_PATH": ":memory:",
-            "BRAVE_API_KEY": "real-brave-key-from-env",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "APP_SECRET_KEY": "test-secret",
+                "FLASK_DEBUG": "True",
+                "DATABASE_PATH": ":memory:",
+                "BRAVE_API_KEY": "real-brave-key-from-env",
+            },
+        ):
             from src.chanakya.services import tool_loader
 
             # Patch 'os' into the module's namespace to fix the missing import
             import importlib
             import os as _os
+
             tool_loader_module = sys.modules["src.chanakya.services.tool_loader"]
             setattr(tool_loader_module, "os", _os)
 
@@ -334,11 +355,18 @@ class TestToolLoaderEnvInjectionIntegration(unittest.TestCase):
                 async def get_tools(self):
                     return []
 
-            with patch("src.chanakya.services.tool_loader.load_mcp_config_internal") as mock_load, \
-                 patch("src.chanakya.services.tool_loader.MultiServerMCPClient", MockMCPClient):
+            with (
+                patch(
+                    "src.chanakya.services.tool_loader.load_mcp_config_internal"
+                ) as mock_load,
+                patch(
+                    "src.chanakya.services.tool_loader.MultiServerMCPClient",
+                    MockMCPClient,
+                ),
+            ):
                 mock_load.return_value = mcp_config
 
-                asyncio.get_event_loop().run_until_complete(
+                asyncio.new_event_loop().run_until_complete(
                     tool_loader.load_all_mcp_tools_async(force_reload=True)
                 )
 
@@ -355,11 +383,14 @@ class TestToolLoaderEnvInjectionIntegration(unittest.TestCase):
         `import os` at the top. Without patching, load_all_mcp_tools_async will
         raise NameError when it tries to call os.environ.get().
         """
-        with patch.dict(os.environ, {
-            "APP_SECRET_KEY": "test-secret",
-            "FLASK_DEBUG": "True",
-            "DATABASE_PATH": ":memory:",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "APP_SECRET_KEY": "test-secret",
+                "FLASK_DEBUG": "True",
+                "DATABASE_PATH": ":memory:",
+            },
+        ):
             for key in list(sys.modules.keys()):
                 if "chanakya" in key:
                     del sys.modules[key]
@@ -387,14 +418,22 @@ class TestToolLoaderEnvInjectionIntegration(unittest.TestCase):
                 class MockMCPClient:
                     def __init__(self, cfg):
                         pass
+
                     async def get_tools(self):
                         return []
 
-                with patch("src.chanakya.services.tool_loader.load_mcp_config_internal") as mock_load, \
-                     patch("src.chanakya.services.tool_loader.MultiServerMCPClient", MockMCPClient):
+                with (
+                    patch(
+                        "src.chanakya.services.tool_loader.load_mcp_config_internal"
+                    ) as mock_load,
+                    patch(
+                        "src.chanakya.services.tool_loader.MultiServerMCPClient",
+                        MockMCPClient,
+                    ),
+                ):
                     mock_load.return_value = mcp_config
                     try:
-                        asyncio.get_event_loop().run_until_complete(
+                        asyncio.new_event_loop().run_until_complete(
                             tool_loader.load_all_mcp_tools_async(force_reload=True)
                         )
                         # If it doesn't raise, 'os' was somehow available - that's fine

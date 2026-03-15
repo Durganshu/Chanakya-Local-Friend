@@ -1,3 +1,10 @@
+"""
+ReAct agent implementation with tool calling capabilities.
+
+Provides get_chanakya_react_agent_with_history() to create an agent
+with conversation history and configured tools.
+"""
+
 import re
 import json
 from typing import Union, Any

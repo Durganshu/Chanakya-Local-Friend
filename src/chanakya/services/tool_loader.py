@@ -1,3 +1,12 @@
+"""
+MCP tool loading and caching.
+
+Provides load_all_mcp_tools_async() to initialize tools from mcp_config_file.json.
+Tools are cached in CACHED_MCP_TOOLS for reuse.
+"""
+
+import os
+import sys
 from typing import List
 from langchain_core.tools.render import render_text_description
 from langchain_core.tools import BaseTool
@@ -12,6 +21,7 @@ mcp_tool_names_for_llm: str = "No tool names loaded yet."
 
 
 async def load_all_mcp_tools_async(force_reload=False) -> List[BaseTool]:
+    """Load MCP tools from config; cache results unless force_reload=True."""
     global \
         CACHED_MCP_TOOLS, \
         MCP_TOOLS_LOADED_FLAG, \
@@ -26,11 +36,14 @@ async def load_all_mcp_tools_async(force_reload=False) -> List[BaseTool]:
     )
     mcp_servers = load_mcp_config_internal(MCP_CONFIG_FILENAME)
     cfg_local = {}
+    wrapper_path = os.path.join(os.path.dirname(__file__), "mcp_wrapper.py")
+
     if mcp_servers:
         for name, details in mcp_servers.items():
+            # Use the python wrapper to filter out any non-JSON messages outputted by servers like node
             server_config_for_client = {
-                "command": details["command"],
-                "args": details["args"],
+                "command": sys.executable,
+                "args": [wrapper_path, details["command"]] + details["args"],
                 "transport": details.get("transport", "stdio"),
             }
             if "env" in details and isinstance(details["env"], dict):

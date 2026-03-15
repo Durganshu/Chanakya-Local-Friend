@@ -1,3 +1,9 @@
+"""
+Main entry point for the Chanakya Flask application.
+
+Starts the HTTP server, initializes services, and monitors client connections.
+"""
+
 import nest_asyncio
 
 nest_asyncio.apply()
@@ -73,4 +79,3 @@ if __name__ == "__main__":
         "Starting Chanakya Flask app (ReAct Agent, Async Routes, Per-Request LLM/Agent, Merged Tools, nest_asyncio)..."
     )
     app.run(host="0.0.0.0", port=5001, use_reloader=True, ssl_context=ssl_context)
-

@@ -1,3 +1,9 @@
+"""
+Client activity tracking for connection monitoring.
+
+Manages active_clients dict and periodic cleanup of inactive sessions.
+"""
+
 import threading
 import time
 from .. import config
@@ -10,11 +16,13 @@ client_count_lock = threading.Lock()
 
 
 def update_client_activity(client_id):
+    """Record activity for a client by updating their last active timestamp."""
     with client_count_lock:
         active_clients[client_id] = time.time()
 
 
 def remove_inactive_clients():
+    """Remove clients that have been inactive beyond INACTIVE_THRESHOLD."""
     current_time = time.time()
     with client_count_lock:
         inactive_ids = [

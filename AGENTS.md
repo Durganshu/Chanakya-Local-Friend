@@ -1,177 +1,136 @@
 # AGENTS.md - Chanakya-Local-Friend Development Guide
 
-This guide provides essential information for agentic coding agents working on the Chanakya-Local-Friend project.
+Essential information for agentic coding agents working on this Flask-based chatbot with MCP tool integration.
 
-## Build and Development Commands
+## Build & Dev Commands
 
-### Application Start
+### Application
 ```bash
-# Main entry point (HTTP)
-python chanakya.py
-
-# With HTTPS (requires certs/cert.pem and certs/key.pem)
-# Generate certificates first if needed:
-python -m src.chanakya.services.generate_cert
-
-# Docker build and run
-docker build -t chanakya-assistant .
-docker run --restart=always -d --network="host" --env-file .env --name chanakya chanakya-assistant
+python chanakya.py  # HTTP server
+python -m src.chanakya.services.generate_cert  # HTTPS certs
+docker build -t chanakya-assistant . && docker run --restart=always -d --network="host" --env-file .env --name chanakya chanakya-assistant
 ```
 
-### Dependency Management
+### Dependencies
 ```bash
-# Install dependencies from requirements.txt
+# Using pip
+pip install -r requirements.txt  # Python 3.11+ required
+
+# Using conda (if environment 'chanakya' exists)
+conda activate chanakya
 pip install -r requirements.txt
-
-# Install development dependencies (if available)
-pip install -r requirements-dev.txt  # Check if exists
-
-# Check Python version compatibility (requires 3.11+)
-python --version
 ```
 
-### Testing
-**Note**: The project currently has no formal test suite. When adding new features:
-
-1. Manually test the feature through the web interface (`http://localhost:5001`)
-2. Test API endpoints (`/chat`, `/record`, `/play_response`, `/memory`, etc.)
-3. Verify tool integration with MCP (Model Context Protocol)
-4. Check Flask route functionality
-
-### Code Quality Tools
+### Testing (pytest)
 ```bash
-# Run ruff linter
-ruff check .
+pytest                              # All tests
+pytest tests/test_config.py         # Single file
+pytest tests/test_config.py::TestGetEnvCleanStandalone::test_returns_plain_string_unchanged  # Single test
+pytest -k "test_plain" --verbose    # Keyword match
+pytest --cov=src/chanakya --cov-report=html  # With coverage
+```
+Tests use `unittest.TestCase` with `pytest-flask`; async tests use `pytest-asyncio`. Mock with `unittest.mock.patch`.
 
-# Format code with ruff
-ruff format .
-
-# Type checking (if mypy is installed)
-mypy src/
+### Code Quality
+```bash
+ruff check .   # Lint
+ruff format .  # Format
+mypy src/      # Type check (if available)
 ```
 
-## Code Style Guidelines
+## Code Style
 
 ### Imports
-- **Order**: Standard library → third-party → local modules
-- **Format**: One import per line, grouped with blank lines between groups
-- **Example** from `routes.py:7-30`:
-  ```python
-  import asyncio
-  import base64
-  import datetime
-  import os
-  import tempfile
-  import time
-  from flask import jsonify, render_template, request, redirect, url_for
-  from .app_setup import app
-  ```
+Order: stdlib → third-party → local. One per line, blank lines between groups.
 
 ### Formatting
-- **Indentation**: 4 spaces (no tabs)
-- **Line length**: ~100 characters (based on existing code)
-- **String quotes**: Single quotes (`'`) for strings, double quotes (`"`) for docstrings
-- **Trailing commas**: Use in multi-line collections
-- **Use ruff for formatting**: Consistent with `.ruff_cache` presence
+- 4 spaces, ~100 char lines
+- Single quotes for strings, double for docstrings
+- Trailing commas in multi-line collections
 
-### Naming Conventions
-- **Variables/Local**: `snake_case` (e.g., `user_message`, `temp_audio_file_path`)
-- **Constants**: `UPPER_SNAKE_CASE` (e.g., `APP_SECRET_KEY`, `WAKE_WORD`)
-- **Functions/Methods**: `snake_case` (e.g., `update_client_activity`, `get_plain_text_content`)
-- **Classes**: `PascalCase` (e.g., likely in external libraries, less common in current codebase)
-- **Modules/Files**: `snake_case` (e.g., `config.py`, `memory_management.py`)
+### Naming
+- `snake_case`: variables, functions, modules
+- `UPPER_SNAKE_CASE`: constants
+- `PascalCase`: classes
 
-### Error Handling Pattern
-Follow existing patterns from `routes.py`:
-
-1. **Try/Except with specific exceptions**:
-   ```python
-   try:
-       # operation
-   except RuntimeError as e:
-       if "Event loop is closed" in str(e):
-           # Handle specific case
-           app.logger.error(f"EVENT LOOP CLOSED ERROR: {e}", exc_info=True)
-           return jsonify({"response": "Internal server error"}), 500
-       else:
-           app.logger.error(f"Runtime error: {e}", exc_info=True)
-           return jsonify({"response": f"Sorry, a runtime error occurred: {e}"}), 500
-   except Exception as e:
-       app.logger.error(f"Error in endpoint: {e}", exc_info=True)
-       return jsonify({"response": "Sorry, I encountered an error"}), 500
-   ```
-
-2. **Logging**: Use `app.logger.info/warning/error` with descriptive messages
-3. **User-facing errors**: Return JSON responses with appropriate HTTP codes
-4. **Resource cleanup**: Use `finally` blocks for file/network cleanup
+### Error Handling
+```python
+try:
+    # operation
+except RuntimeError as e:
+    if "Event loop is closed" in str(e):
+        app.logger.error(f"EVENT LOOP CLOSED: {e}", exc_info=True)
+        return jsonify({"response": "Internal server error"}), 500
+    raise
+except Exception as e:
+    app.logger.error(f"Error: {e}", exc_info=True)
+    return jsonify({"response": "Sorry, an error occurred"}), 500
+finally:
+    # cleanup resources
+```
 
 ### Type Hints
-- **Use typing imports** when available (not consistently used in current codebase)
-- **Add type hints** for new functions and public APIs
-- **Example from `utils.py:6`**:
-  ```python
-  def get_plain_text_content(response_object):
-      # Would benefit from type hints
-  ```
+Add for new functions/public APIs. Import from `typing` as needed.
 
 ### Project Structure
 ```
 src/chanakya/
-├── config.py              # Configuration and environment variables
-├── core/                  # Core logic (agents, memory, chat history)
-├── services/              # External service integrations (STT, TTS, tools)
-├── utils/                 # Utility functions
-├── web/                   # Flask web application (routes, app setup)
-└── prompts/               # Prompt templates
+├── config.py    # Env & config helpers
+├── core/        # Agents, memory, chat history
+├── services/    # STT, TTS, MCP tools
+├── utils/       # Utilities
+├── web/         # Flask app, routes, templates
+└── prompts/     # Prompt templates
 ```
+Frontend: `src/frontend/templates/` | `src/frontend/static/`
 
-### Flask-Specific Guidelines
-1. **Route decorators**: Use `@app.route("/path")` with appropriate methods
-2. **Async routes**: Use `async def` and `asyncio` for long-running operations
-3. **Template rendering**: Use `render_template()` with `template_folder` configured in `app_setup.py:8`
-4. **Static files**: Store in `src/frontend/static/`
-5. **Templates**: Store in `src/frontend/templates/`
+## Flask Guidelines
+- Routes: `@app.route("/path", methods=['GET', 'POST'])`
+- Async routes: `async def` with `await`
+- Test client: `app.test_client()`
+- No blueprints; routes registered directly
 
-### Environment Configuration
-- **`.env` file**: Required for runtime configuration (copy from `.env.example`)
-- **`mcp_config_file.json`**: Tool configuration (copy from `mcp_config_file.json.example`)
-- **Config loading**: Use `config.py` helper functions (`get_env_clean()`)
+## Environment
+- `.env` (local) & `.env.example` (template)
+- Required: `APP_SECRET_KEY`, `DATABASE_PATH`, `LLM_PROVIDER`
+- Config: `config.py` with `get_env_clean()`
+- MCP tools: `mcp_config_file.json` (copy from example)
 
-### Tool Integration (MCP)
-- **Tool naming**: Use `snake_case` for tool names in MCP configuration
-- **Tool instructions**: See `tool_specific_instructions.txt` for Home Assistant specifics
-- **Tool loading**: Async loading via `load_all_mcp_tools_async()` in `tool_loader.py`
+## Tool Integration (MCP)
+- Tool names: `snake_case` in MCP config
+- Loading: async via `tool_loader.load_all_mcp_tools_async()`
+- See `tool_specific_instructions.txt` for Home Assistant
+- Tools injected into LangChain agent via `tools` parameter
 
-### Documentation
-- **Function docstrings**: Use triple quotes with brief description
-- **Complex logic**: Add inline comments explaining non-obvious code
-- **README updates**: Update relevant sections when adding major features
-- **API endpoints**: Document new routes in appropriate doc files
+## Documentation
+- Docstrings: triple quotes, brief
+- Inline comments: explain non-obvious logic only
+- Update `README.md` for user-facing changes
 
-### Security Considerations
-1. **Never commit secrets**: `.env`, `mcp_config_file.json` with secrets, certificate files
-2. **Input validation**: Validate user input in routes before processing
-3. **Error messages**: Avoid exposing stack traces or sensitive info in production
-4. **Dependencies**: Keep requirements.txt updated with version pins
+## Security
+- Never commit: `.env`, `mcp_config_file.json` (with secrets), SSL certs
+- Validate user input in routes
+- No stack traces in production responses
+- Keep `requirements.txt` version-pinned
 
-## Development Workflow
-
-1. **Start development server**: `python chanakya.py`
-2. **Access web interface**: `http://localhost:5001`
-3. **Test changes**: Use the web interface to test functionality
-4. **Check logs**: Monitor Flask logs for errors and info messages
-5. **Run linter**: `ruff check .` before committing
-6. **Update documentation**: Add to relevant docs/ files if adding features
+## Workflow
+1. `python chanakya.py`
+2. Access `http://localhost:5001`
+3. Test via web UI & API (`/chat`, `/record`, `/memory`)
+4. Check Flask logs
+5. `ruff check .` before committing
+6. `pytest` to verify
 
 ## Common Issues
-- **TemplateNotFound**: Ensure templates are in `src/frontend/templates/`
-- **Async errors**: Use `nest_asyncio.apply()` at entry point
-- **MCP tool failures**: Check `mcp_config_file.json` configuration
-- **SSL/HTTPS**: Generate certs with `generate_cert.py` for microphone access
+- `TemplateNotFound`: check `src/frontend/templates/`
+- Async errors: ensure `nest_asyncio.apply()` in `chanakya.py`
+- MCP failures: validate `mcp_config_file.json` syntax
+- SSL/HTTPS for mic: run `generate_cert.py` first
 
-## Notes for Agentic Coding
-- This project uses Flask with async/await patterns
-- MCP (Model Context Protocol) integration is key for tool functionality
-- Memory management uses SQLite database (`DATABASE_PATH` config)
-- Voice features require STT/TTS services to be running
-- Focus on privacy: all processing should be local when possible
+## Notes
+- Flask with async/await; `nest_asyncio` required
+- MCP for external tools (Home Assistant, etc.)
+- SQLite for memory (`DATABASE_PATH`)
+- STT/TTS services must be running
+- Privacy focus: local processing preferred
+- Tests use mocking; follow `tests/` patterns
