@@ -1,15 +1,19 @@
 import logging
 from flask import Flask
 from flask_cors import CORS
-import scripts.config as config
+from .. import config
 
-app = Flask(__name__, template_folder='../templates', static_folder='../static')
+app = Flask(
+    __name__,
+    template_folder="../frontend/templates",
+    static_folder="../frontend/static",
+)
 CORS(app)
 app.secret_key = config.APP_SECRET_KEY
 
 log_handler = logging.StreamHandler()
 log_handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 log_handler.setFormatter(formatter)
 
 if not app.logger.handlers:
