@@ -10,6 +10,8 @@ import os
 from abc import ABC, abstractmethod
 from typing import Optional
 
+from src.chanakya import config
+
 logger = logging.getLogger(__name__)
 
 
@@ -112,25 +114,25 @@ def init_audio_services() -> None:
     """
     global _tts_service, _stt_service
 
-    tts_provider = os.getenv('TTS_PROVIDER', 'openai').lower()
-    stt_provider = os.getenv('STT_PROVIDER', 'openai').lower()
+    tts_provider = config.TTS_PROVIDER.lower() if config.TTS_PROVIDER else 'openai'
+    stt_provider = config.STT_PROVIDER.lower() if config.STT_PROVIDER else 'openai'
     logger.info(f"Initialising audio services: TTS={tts_provider}, STT={stt_provider}")
 
     if tts_provider == 'openai':
         _tts_service = OpenAITTS(
-            base_url=os.getenv('TTS_BASE_URL', 'http://localhost:8080/v1'),
-            api_key=os.getenv('TTS_API_KEY', 'not-required'),
-            model=os.getenv('TTS_MODEL', 'tts-1'),
-            default_voice=os.getenv('TTS_VOICE', 'alloy'),
+            base_url=config.TTS_BASE_URL or 'http://localhost:8080/v1',
+            api_key=config.TTS_API_KEY or 'not-required',
+            model=config.TTS_MODEL or 'tts-1',
+            default_voice=config.TTS_VOICE or 'alloy',
         )
     else:
         raise ValueError(f"Unsupported TTS_PROVIDER: {tts_provider}")
 
     if stt_provider == 'openai':
         _stt_service = OpenAISTT(
-            base_url=os.getenv('STT_BASE_URL', 'http://localhost:8080/v1'),
-            api_key=os.getenv('STT_API_KEY', 'not-required'),
-            model=os.getenv('STT_MODEL', 'whisper-1'),
+            base_url=config.STT_BASE_URL or 'http://localhost:8080/v1',
+            api_key=config.STT_API_KEY or 'not-required',
+            model=config.STT_MODEL or 'whisper-1',
         )
     else:
         raise ValueError(f"Unsupported STT_PROVIDER: {stt_provider}")
