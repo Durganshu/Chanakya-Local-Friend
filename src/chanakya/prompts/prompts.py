@@ -1,3 +1,9 @@
+"""
+Prompt templates for the Chanakya chatbot.
+
+Contains REACT_AGENT_PROMPT_TEMPLATE_STR and QUERY_REFINEMENT_TEMPLATE_STR.
+"""
+
 REACT_AGENT_PROMPT_TEMPLATE_STR = """
 {dynamic_intro_and_memories}
 

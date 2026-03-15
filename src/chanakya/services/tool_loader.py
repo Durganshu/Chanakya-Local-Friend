@@ -1,3 +1,10 @@
+"""
+MCP tool loading and caching.
+
+Provides load_all_mcp_tools_async() to initialize tools from mcp_config_file.json.
+Tools are cached in CACHED_MCP_TOOLS for reuse.
+"""
+
 import os
 import sys
 from typing import List
@@ -14,6 +21,7 @@ mcp_tool_names_for_llm: str = "No tool names loaded yet."
 
 
 async def load_all_mcp_tools_async(force_reload=False) -> List[BaseTool]:
+    """Load MCP tools from config; cache results unless force_reload=True."""
     global \
         CACHED_MCP_TOOLS, \
         MCP_TOOLS_LOADED_FLAG, \

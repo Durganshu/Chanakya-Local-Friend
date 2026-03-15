@@ -1,3 +1,9 @@
+"""
+Flask application factory and configuration.
+
+Creates the Flask app instance with CORS, template/static paths, and logging.
+"""
+
 import os
 import logging
 from flask import Flask

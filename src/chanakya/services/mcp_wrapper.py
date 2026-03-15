@@ -1,9 +1,17 @@
+"""
+MCP (Model Context Protocol) wrapper for subprocess communication.
+
+Handles stdin/stdout forwarding to MCP tools. For internal use only.
+"""
+
 import sys
 import subprocess
 import threading
 import json
 
+
 def forward_stdin(proc):
+    """Forward stdin lines to the subprocess until EOF."""
     try:
         while True:
             line = sys.stdin.readline()
@@ -15,18 +23,20 @@ def forward_stdin(proc):
         pass
     proc.stdin.close()
 
+
 def main():
+    """Entry point: wrap a subcommand and forward I/O."""
     if len(sys.argv) < 2:
         sys.exit("Usage: mcp_wrapper.py <command> [args...]")
-    
+
     cmd = sys.argv[1:]
     proc = subprocess.Popen(
         cmd,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
-        stderr=sys.stderr, # Forward stderr directly
+        stderr=sys.stderr,  # Forward stderr directly
         text=True,
-        bufsize=1
+        bufsize=1,
     )
 
     t = threading.Thread(target=forward_stdin, args=(proc,), daemon=True)
@@ -40,8 +50,8 @@ def main():
             line_stripped = line.strip()
             if not line_stripped:
                 continue
-                
-            if line_stripped.startswith('{'):
+
+            if line_stripped.startswith("{"):
                 try:
                     # Quick check if it's remotely valid JSON before forwarding
                     json.loads(line_stripped)
@@ -50,13 +60,14 @@ def main():
                     continue
                 except ValueError:
                     pass
-            
+
             # If we get here, it's not JSON, so we forward to stderr to hide it from MCP SDK
             sys.stderr.write(f"[mcp_wrapper/{cmd[0]}] {line}")
             sys.stderr.flush()
     except Exception:
         pass
     proc.wait()
+
 
 if __name__ == "__main__":
     main()

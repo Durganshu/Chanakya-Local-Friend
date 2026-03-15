@@ -1,3 +1,9 @@
+"""
+Query refinement chain using a smaller LLM.
+
+Refines user queries before passing to the main agent for better results.
+"""
+
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
@@ -13,6 +19,7 @@ query_refinement_prompt_template_obj = ChatPromptTemplate.from_template(
 
 
 def get_query_refinement_chain():
+    """Return a configured LLM chain for query refinement, or None if disabled."""
     provider = config.LLM_PROVIDER.lower()
     app.logger.info(f"Configuring Query Refinement LLM with provider: {provider}")
 
