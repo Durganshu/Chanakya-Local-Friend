@@ -10,6 +10,7 @@ import threading
 from src.chanakya.web.app_setup import app
 from src.chanakya.core.memory_management import create_table
 from src.chanakya.services.tool_loader import load_all_mcp_tools_async
+from src.chanakya.services.audio_service import init_audio_services
 from src.chanakya.web.routes import background_thread
 
 # This import is necessary to register the routes
@@ -17,6 +18,7 @@ from src.chanakya.web import routes
 
 if __name__ == "__main__":
     create_table()
+    init_audio_services()
 
     app.logger.info(
         "Attempting to load MCP tools at startup (async via asyncio.run)..."
@@ -71,3 +73,4 @@ if __name__ == "__main__":
         "Starting Chanakya Flask app (ReAct Agent, Async Routes, Per-Request LLM/Agent, Merged Tools, nest_asyncio)..."
     )
     app.run(host="0.0.0.0", port=5001, use_reloader=True, ssl_context=ssl_context)
+

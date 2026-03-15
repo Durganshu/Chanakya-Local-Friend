@@ -10,28 +10,10 @@ import sys
 import json
 import asyncio
 import tempfile
-import types
 import unittest
 from unittest.mock import patch, MagicMock, AsyncMock
 
-sys.path.insert(0, "/home/jailuser/git")
-
-
-def _mock_heavy_deps():
-    """
-    Mock out heavy ML dependencies (torchaudio, chatterbox) that aren't
-    available in the test environment but are imported at module level in tts_local.py.
-    """
-    # Mock torchaudio
-    mock_torchaudio = types.ModuleType("torchaudio")
-    sys.modules["torchaudio"] = mock_torchaudio
-
-    # Mock chatterbox.tts
-    mock_chatterbox = types.ModuleType("chatterbox")
-    mock_chatterbox_tts = types.ModuleType("chatterbox.tts")
-    mock_chatterbox_tts.ChatterboxTTS = MagicMock()
-    sys.modules["chatterbox"] = mock_chatterbox
-    sys.modules["chatterbox.tts"] = mock_chatterbox_tts
+sys.path.insert(0, '/home/jailuser/git')
 
 
 def setup_flask_app():
@@ -39,20 +21,17 @@ def setup_flask_app():
     Set up environment and imports needed to get the Flask test client.
     Returns the Flask app instance.
     """
-    # Mock heavy deps first
-    _mock_heavy_deps()
-
     # Set required env vars
-    os.environ["APP_SECRET_KEY"] = "test-secret-routes"
-    os.environ["FLASK_DEBUG"] = "True"
-    os.environ["LLM_PROVIDER"] = "ollama"
-    os.environ["DATABASE_PATH"] = ":memory:"
-    os.environ["WAKE_WORD"] = "TestBot"
-    os.environ["TTS_ENGINE"] = "coqui"
+    os.environ['APP_SECRET_KEY'] = 'test-secret-routes'
+    os.environ['FLASK_DEBUG'] = 'True'
+    os.environ['LLM_PROVIDER'] = 'ollama'
+    os.environ['DATABASE_PATH'] = ':memory:'
+    os.environ['WAKE_WORD'] = 'TestBot'
+    os.environ['TTS_PROVIDER'] = 'openai'
 
     # Clear any cached chanakya modules
     for key in list(sys.modules.keys()):
-        if "chanakya" in key:
+        if 'chanakya' in key:
             del sys.modules[key]
 
     from src.chanakya.web.app_setup import app
@@ -261,12 +240,12 @@ class TestRecordRouteToolException(unittest.TestCase):
         mock_agent.ainvoke = mock_agent_invoke
 
         with patch("src.chanakya.web.routes.update_client_activity"), \
-             patch("src.chanakya.web.routes.stt_local.transcribe_audio",
-                   return_value="what is the weather"), \
-             patch("src.chanakya.web.routes.get_query_refinement_chain", return_value=None), \
-             patch("src.chanakya.web.routes.retrieve_relevant_memories", return_value=[]), \
-             patch("src.chanakya.web.routes.get_chanakya_react_agent_with_history",
+             patch('src.chanakya.web.routes.get_stt') as mock_get_stt, \
+             patch('src.chanakya.web.routes.get_query_refinement_chain', return_value=None), \
+             patch('src.chanakya.web.routes.retrieve_relevant_memories', return_value=[]), \
+             patch('src.chanakya.web.routes.get_chanakya_react_agent_with_history',
                    return_value=mock_agent):
+            mock_get_stt.return_value.transcribe.return_value = 'what is the weather'
             response = self.client.post(
                 "/record",
                 data={"audio": (BytesIO(b"fake_wav_data"), "audio.wav")},
@@ -292,12 +271,12 @@ class TestRecordRouteToolException(unittest.TestCase):
         mock_agent.ainvoke = mock_agent_invoke
 
         with patch("src.chanakya.web.routes.update_client_activity"), \
-             patch("src.chanakya.web.routes.stt_local.transcribe_audio",
-                   return_value="original transcribed text"), \
-             patch("src.chanakya.web.routes.get_query_refinement_chain", return_value=None), \
-             patch("src.chanakya.web.routes.retrieve_relevant_memories", return_value=[]), \
-             patch("src.chanakya.web.routes.get_chanakya_react_agent_with_history",
+             patch('src.chanakya.web.routes.get_stt') as mock_get_stt, \
+             patch('src.chanakya.web.routes.get_query_refinement_chain', return_value=None), \
+             patch('src.chanakya.web.routes.retrieve_relevant_memories', return_value=[]), \
+             patch('src.chanakya.web.routes.get_chanakya_react_agent_with_history',
                    return_value=mock_agent):
+            mock_get_stt.return_value.transcribe.return_value = 'original transcribed text'
             response = self.client.post(
                 "/record",
                 data={"audio": (BytesIO(b"data"), "audio.wav")},
@@ -311,8 +290,9 @@ class TestRecordRouteToolException(unittest.TestCase):
         """When STT returns empty transcription, /record should return 400."""
         from io import BytesIO
 
-        with patch("src.chanakya.web.routes.update_client_activity"), \
-             patch("src.chanakya.web.routes.stt_local.transcribe_audio", return_value=""):
+        with patch('src.chanakya.web.routes.update_client_activity'), \
+             patch('src.chanakya.web.routes.get_stt') as mock_get_stt:
+            mock_get_stt.return_value.transcribe.return_value = ''
             response = self.client.post(
                 "/record",
                 data={"audio": (BytesIO(b"data"), "audio.wav")},
@@ -328,8 +308,9 @@ class TestRecordRouteToolException(unittest.TestCase):
         """When STT returns None, /record should return 400."""
         from io import BytesIO
 
-        with patch("src.chanakya.web.routes.update_client_activity"), \
-             patch("src.chanakya.web.routes.stt_local.transcribe_audio", return_value=None):
+        with patch('src.chanakya.web.routes.update_client_activity'), \
+             patch('src.chanakya.web.routes.get_stt') as mock_get_stt:
+            mock_get_stt.return_value.transcribe.return_value = None
             response = self.client.post(
                 "/record",
                 data={"audio": (BytesIO(b"data"), "audio.wav")},
@@ -349,12 +330,12 @@ class TestRecordRouteToolException(unittest.TestCase):
         mock_agent.ainvoke = mock_agent_invoke
 
         with patch("src.chanakya.web.routes.update_client_activity"), \
-             patch("src.chanakya.web.routes.stt_local.transcribe_audio",
-                   return_value="hello there"), \
-             patch("src.chanakya.web.routes.get_query_refinement_chain", return_value=None), \
-             patch("src.chanakya.web.routes.retrieve_relevant_memories", return_value=[]), \
-             patch("src.chanakya.web.routes.get_chanakya_react_agent_with_history",
+             patch('src.chanakya.web.routes.get_stt') as mock_get_stt, \
+             patch('src.chanakya.web.routes.get_query_refinement_chain', return_value=None), \
+             patch('src.chanakya.web.routes.retrieve_relevant_memories', return_value=[]), \
+             patch('src.chanakya.web.routes.get_chanakya_react_agent_with_history',
                    return_value=mock_agent):
+            mock_get_stt.return_value.transcribe.return_value = 'hello there'
             response = self.client.post(
                 "/record",
                 data={"audio": (BytesIO(b"data"), "audio.wav")},
@@ -385,38 +366,26 @@ class TestPlayResponseRoute(unittest.TestCase):
 
     def test_play_response_with_last_response_calls_tts(self):
         """POST /play_response with a last AI response should call TTS."""
-        import tempfile
-        import os
+        with patch('src.chanakya.web.routes.update_client_activity'), \
+             patch('src.chanakya.web.routes.utils_module') as mock_utils, \
+             patch('src.chanakya.web.routes.get_tts') as mock_get_tts:
+            mock_utils.last_ai_response = 'Previous response text'
+            mock_get_tts.return_value.generate.return_value = b'RIFF' + b'\x00' * 40
+            response = self.client.post('/play_response')
 
-        # Create a temp wav file
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
-            f.write(b"RIFF" + b"\x00" * 40)  # minimal WAV-like bytes
-            tmp_path = f.name
-
-        try:
-            with patch("src.chanakya.web.routes.update_client_activity"), \
-                 patch("src.chanakya.web.routes.utils_module") as mock_utils, \
-                 patch("src.chanakya.web.routes.tts_local.text_to_speech",
-                       return_value=tmp_path):
-                mock_utils.last_ai_response = "Previous response text"
-                response = self.client.post("/play_response")
-
-            self.assertEqual(response.status_code, 200)
-            data = json.loads(response.data)
-            self.assertIn("audio_data_url", data)
-            self.assertTrue(data["audio_data_url"].startswith("data:audio/wav;base64,"))
-        finally:
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        self.assertIn('audio_data_url', data)
+        self.assertTrue(data['audio_data_url'].startswith('data:audio/wav;base64,'))
 
     def test_play_response_tts_fails_returns_500(self):
         """When TTS fails, /play_response should return 500."""
-        with patch("src.chanakya.web.routes.update_client_activity"), \
-             patch("src.chanakya.web.routes.utils_module") as mock_utils, \
-             patch("src.chanakya.web.routes.tts_local.text_to_speech",
-                   return_value=None):
-            mock_utils.last_ai_response = "some text"
-            response = self.client.post("/play_response")
+        with patch('src.chanakya.web.routes.update_client_activity'), \
+             patch('src.chanakya.web.routes.utils_module') as mock_utils, \
+             patch('src.chanakya.web.routes.get_tts') as mock_get_tts:
+            mock_utils.last_ai_response = 'some text'
+            mock_get_tts.return_value.generate.side_effect = Exception('TTS server unreachable')
+            response = self.client.post('/play_response')
 
         self.assertEqual(response.status_code, 500)
         data = json.loads(response.data)
@@ -477,13 +446,12 @@ class TestBackgroundThread(unittest.TestCase):
 
     def test_background_thread_importable(self):
         """background_thread should be importable from routes."""
-        _mock_heavy_deps()
         for key in list(sys.modules.keys()):
-            if "chanakya" in key:
+            if 'chanakya' in key:
                 del sys.modules[key]
-        os.environ.setdefault("APP_SECRET_KEY", "test-bg-thread")
-        os.environ.setdefault("FLASK_DEBUG", "True")
-        os.environ.setdefault("DATABASE_PATH", ":memory:")
+        os.environ.setdefault('APP_SECRET_KEY', 'test-bg-thread')
+        os.environ.setdefault('FLASK_DEBUG', 'True')
+        os.environ.setdefault('DATABASE_PATH', ':memory:')
         from src.chanakya.web.routes import background_thread
         self.assertTrue(callable(background_thread))
 

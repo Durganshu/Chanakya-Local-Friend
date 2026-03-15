@@ -81,15 +81,18 @@ else:
     # If the variable is not set at all, fall back to the main model's context size.
     LLM_NUM_CTX_SMALL = LLM_NUM_CTX
 
-# stt and tts Configuration
-STT_SERVER_URL = get_env_clean('STT_SERVER_URL') # Default STT API URL
-TTS_ENGINE = get_env_clean('TTS_ENGINE', "coqui") # coqui (human like, fast) or chatterbox (great voice cloning, slow) or piper (fastest, but fails on some tests)
-if TTS_ENGINE == "chatterbox":
-    TTS_SERVER_URL = None  # Chatterbox does not use a server URL
-elif TTS_ENGINE == "coqui":
-    TTS_SERVER_URL = get_env_clean('TTS_SERVER_URL') 
-elif TTS_ENGINE == "piper":
-    TTS_SERVER_URL = get_env_clean('TTS_SERVER_URL')
+# TTS Configuration
+TTS_PROVIDER = get_env_clean('TTS_PROVIDER', 'openai')
+TTS_BASE_URL  = get_env_clean('TTS_BASE_URL',  'http://localhost:8080/v1')
+TTS_MODEL     = get_env_clean('TTS_MODEL',     'tts-1')
+TTS_VOICE     = get_env_clean('TTS_VOICE',     'alloy')
+TTS_API_KEY   = get_env_clean('TTS_API_KEY',   'not-required')
+
+# STT Configuration
+STT_PROVIDER  = get_env_clean('STT_PROVIDER',  'openai')
+STT_BASE_URL  = get_env_clean('STT_BASE_URL',  'http://localhost:8080/v1')
+STT_MODEL     = get_env_clean('STT_MODEL',     'whisper-1')
+STT_API_KEY   = get_env_clean('STT_API_KEY',   'not-required')
 
 # Database Configuration
 DATABASE_PATH = get_env_clean('DATABASE_PATH')

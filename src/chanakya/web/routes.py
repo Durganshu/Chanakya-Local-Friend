@@ -25,8 +25,7 @@ from ..services import tool_loader
 from ..utils.utils import get_plain_text_content
 from ..utils import utils as utils_module  # to modify last_ai_response
 from .. import config
-from ..services import stt_local
-from ..services import tts_local
+from ..services.audio_service import get_stt, get_tts
 from langchain_core.agents import AgentAction
 from langchain_core.tools import ToolException
 
@@ -219,9 +218,7 @@ async def record():
                 temp_f.write(audio_data)
                 temp_audio_file_path_stt = temp_f.name
 
-            transcription = stt_local.transcribe_audio(
-                temp_audio_file_path_stt, config.STT_SERVER_URL
-            )
+            transcription = get_stt().transcribe(temp_audio_file_path_stt)
             if transcription is None or not transcription.strip():
                 return jsonify({"error": "Could not understand audio."}), 400
             app.logger.info(f"RECORD - Transcription: '{transcription}'")
@@ -313,11 +310,10 @@ Current date and time: {current_dt_str}"""
 
             bot_speech_audio_data_url = None
             if utils_module.last_ai_response:
-                tts_audio_file_path_for_bot_response = tts_local.text_to_speech(
-                    utils_module.last_ai_response,
-                    config.TTS_ENGINE,
-                    config.TTS_SERVER_URL,
-                )
+                tts_audio_bytes = get_tts().generate(utils_module.last_ai_response)
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tts_f:
+                    tts_f.write(tts_audio_bytes)
+                    tts_audio_file_path_for_bot_response = tts_f.name
                 if tts_audio_file_path_for_bot_response and os.path.exists(
                     tts_audio_file_path_for_bot_response
                 ):
@@ -374,9 +370,10 @@ def play_response():
     update_client_activity(request.remote_addr)
     if utils_module.last_ai_response:
         try:
-            audio_file_path = tts_local.text_to_speech(
-                utils_module.last_ai_response, config.TTS_ENGINE, config.TTS_SERVER_URL
-            )
+            tts_audio_bytes = get_tts().generate(utils_module.last_ai_response)
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tts_f:
+                tts_f.write(tts_audio_bytes)
+                audio_file_path = tts_f.name
             if not audio_file_path or not os.path.exists(audio_file_path):
                 return jsonify(
                     {"error": "TTS audio file not found or not created."}
@@ -414,3 +411,4 @@ def delete_memory_route():
     if memory_id:
         delete_memory(memory_id)
     return redirect(url_for("memory_page"))
+
