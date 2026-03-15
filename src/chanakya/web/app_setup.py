@@ -1,3 +1,4 @@
+import os
 import logging
 from flask import Flask
 from flask_cors import CORS
@@ -5,8 +6,8 @@ from .. import config
 
 app = Flask(
     __name__,
-    template_folder="../frontend/templates",
-    static_folder="../frontend/static",
+    template_folder=os.path.join(config.PROJECT_ROOT, "src", "frontend", "templates"),
+    static_folder=os.path.join(config.PROJECT_ROOT, "src", "frontend", "static"),
 )
 CORS(app)
 app.secret_key = config.APP_SECRET_KEY

@@ -28,6 +28,7 @@ from .. import config
 from ..services import stt_local
 from ..services import tts_local
 from langchain_core.agents import AgentAction
+from langchain_core.tools import ToolException
 
 
 @app.route("/")
@@ -179,6 +180,14 @@ Current date and time: {current_dt_str}"""
         else:
             app.logger.error(f"Runtime error in /chat: {e}", exc_info=True)
             return jsonify({"response": f"Sorry, a runtime error occurred: {e}"}), 500
+    except ToolException as e:
+        app.logger.warning(f"Tool error in /chat: {e}")
+        return jsonify(
+            {
+                "response": f"I encountered an issue while using one of my tools: {str(e)}. Please try again or rephrase your request.",
+                "used_tools": []
+            }
+        )
     except Exception as e:
         app.logger.error(f"Error in /chat endpoint: {e}", exc_info=True)
         return jsonify(
@@ -339,6 +348,15 @@ Current date and time: {current_dt_str}"""
                 return jsonify(
                     {"response": f"Sorry, a runtime error occurred: {e}"}
                 ), 500
+        except ToolException as e:
+            app.logger.warning(f"Tool error in /record: {e}")
+            return jsonify(
+                {
+                    "response": f"I encountered an issue while using one of my tools: {str(e)}.",
+                    "transcription": transcription,
+                    "used_tools": []
+                }
+            )
         except Exception as e:
             app.logger.error(f"Error processing /record: {e}", exc_info=True)
             return jsonify({"error": f"Server error: {str(e)}"}), 500

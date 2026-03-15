@@ -34,7 +34,17 @@ async def load_all_mcp_tools_async(force_reload=False) -> List[BaseTool]:
                 "transport": details.get("transport", "stdio"),
             }
             if "env" in details and isinstance(details["env"], dict):
-                server_config_for_client["env"] = details["env"]
+                # Inject environment variables from the main OS environment if they exist
+                # or if the value is the placeholder "your_api_key"
+                new_env = {}
+                for env_key, env_val in details["env"].items():
+                    # Priority 1: Check if it's already in the OS environment (set via .env or docker)
+                    os_val = os.environ.get(env_key)
+                    if os_val:
+                        new_env[env_key] = os_val
+                    else:
+                        new_env[env_key] = env_val
+                server_config_for_client["env"] = new_env
             cfg_local[name] = server_config_for_client
 
     if not cfg_local:

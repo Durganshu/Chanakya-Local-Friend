@@ -274,6 +274,7 @@ def get_chanakya_react_agent_with_history():
         tools=current_tools,
         verbose=True,
         handle_parsing_errors=True,
+        handle_tool_errors=True,
         max_iterations=10,
         return_intermediate_steps=True,
     )
