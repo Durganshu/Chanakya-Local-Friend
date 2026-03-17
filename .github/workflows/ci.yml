@@ -39,7 +39,7 @@ jobs:
             -e HUGGINGFACE_HUB_CACHE=/models \
             -e HF_HOME=/models \
             -v ${{ github.workspace }}/models:/models \
-            ghcr.io/speaches-ai/speaches:latest
+            ghcr.io/speaches-ai/speaches:latest-cpu
           
           # Wait for the container to become responsive to avoid initial connection errors
           timeout 60 bash -c 'until curl -s http://localhost:8000/v1/models > /dev/null; do sleep 2; done' || true
@@ -63,7 +63,7 @@ jobs:
       - name: Run Unit Tests
         run: |
           # Run core tests assuming unit level
-          pytest tests/ -v
+          python -m pytest tests/ -v
 
       - name: Run Integration Tests
         if: success() || failure()
@@ -81,7 +81,7 @@ jobs:
           # Execute tests that might interact with the external Speaches container
           # Currently, this runs all tests, but as the suite grows, you may
           # restrict this to a specific directory or use pytest markers (e.g., -m integration)
-          pytest tests/test_audio_service.py -v
+          python -m pytest tests/test_audio_service.py -v
 
       - name: Fix cache permissions
         if: always()
